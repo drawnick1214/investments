@@ -134,6 +134,8 @@ const translations = {
     usdValue: "Valor USD",
     delta: "Diferencia",
 
+    clearAll: "Borrar todo",
+
     // General
     loading: "Cargando...",
     error: "Error",
@@ -277,6 +279,8 @@ const translations = {
     copValue: "COP Value",
     usdValue: "USD Value",
     delta: "Delta",
+
+    clearAll: "Clear all",
 
     // General
     loading: "Loading...",

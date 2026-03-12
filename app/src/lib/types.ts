@@ -62,6 +62,7 @@ export interface Snapshot {
   trm: number;
   xtb_margin: number | null;
   xtb_cash: number | null;
+  trii_cash: number | null;
   total_usd: number | null;
   daily_change: number | null;
   daily_pct: number | null;
@@ -135,6 +136,7 @@ export interface EntryFormData {
   trm: number;
   xtb_margin: number;
   xtb_cash: number;
+  trii_cash: number;
   positions: {
     asset: string;
     platform: string;

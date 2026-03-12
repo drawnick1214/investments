@@ -166,7 +166,7 @@ export async function getSnapshotsInRange(
 
 // Save snapshot (upsert)
 export async function saveSnapshot(formData: EntryFormData): Promise<void> {
-  const { date, trm, xtb_margin, xtb_cash, positions, savings } = formData;
+  const { date, trm, xtb_margin, xtb_cash, trii_cash, positions, savings } = formData;
 
   // Calculate position values — unified for all instrument types
   const positionRows: SnapshotPosition[] = positions.map((p) => {
@@ -245,7 +245,7 @@ export async function saveSnapshot(formData: EntryFormData): Promise<void> {
   const totalUsd =
     xtbPositionsUsd +
     xtb_cash +
-    (triiPositionsCop + savingsCop) / trm;
+    (triiPositionsCop + trii_cash + savingsCop) / trm;
 
   // Get previous day total for daily change
   const { data: prevSnapshots } = await supabase
@@ -271,6 +271,7 @@ export async function saveSnapshot(formData: EntryFormData): Promise<void> {
       trm,
       xtb_margin,
       xtb_cash,
+      trii_cash,
       total_usd: Math.round(totalUsd * 100) / 100,
       daily_change: dailyChange ? Math.round(dailyChange * 100) / 100 : null,
       daily_pct: dailyPct ? Math.round(dailyPct * 1000) / 1000 : null,

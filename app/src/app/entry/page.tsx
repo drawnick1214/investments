@@ -97,6 +97,7 @@ function EntryForm() {
   const [trm, setTrm] = useState(0);
   const [xtbMargin, setXtbMargin] = useState(0);
   const [xtbCash, setXtbCash] = useState(0);
+  const [triiCash, setTriiCash] = useState(0);
   const [xtbInstruments, setXtbInstruments] = useState<InstrumentEntry[]>([]);
   const [triiInstruments, setTriiInstruments] = useState<InstrumentEntry[]>([]);
   const [savingsEntries, setSavingsEntries] = useState<SavingsEntry[]>([]);
@@ -188,6 +189,7 @@ function EntryForm() {
       setTrm(Number(snap.trm));
       setXtbMargin(Number(snap.xtb_margin) || 0);
       setXtbCash(Number(snap.xtb_cash) || 0);
+      setTriiCash(Number(snap.trii_cash) || 0);
 
       const priceMap: Record<string, number> = {};
       for (const pos of snapshot.positions) {
@@ -258,21 +260,16 @@ function EntryForm() {
             setSavingsEntries(savingsConfigs.map((c) => configToSaving(c)));
           }
         } else {
-          // New mode: start EMPTY (configs with price=0)
-          setXtbInstruments(xtbConfigs.map((c) => configToInstrument(c)));
-          setTriiInstruments(triiConfigs.map((c) => configToInstrument(c)));
-          setSavingsEntries(savingsConfigs.map((c) => configToSaving(c)));
+          // New mode: start EMPTY — user adds instruments manually or loads a template
+          setXtbInstruments([]);
+          setTriiInstruments([]);
+          setSavingsEntries([]);
 
           // Load recent snapshot dates for template dropdown
           const dates = await getRecentSnapshotDates(3);
           setRecentDates(dates);
 
-          // Auto-fetch stock prices and TRM
-          const allInstruments = [
-            ...xtbConfigs.map((c) => configToInstrument(c)),
-            ...triiConfigs.map((c) => configToInstrument(c)),
-          ].filter((i) => i.ticker && usesVolumeEntry(i.instrument_type, i.entry_mode));
-          fetchPrices(allInstruments);
+          // Auto-fetch TRM
           fetchTrm();
         }
       } catch (err) {
@@ -356,6 +353,7 @@ function EntryForm() {
         trm,
         xtb_margin: xtbMargin,
         xtb_cash: xtbCash,
+        trii_cash: triiCash,
         positions: [...xtbInstruments, ...triiInstruments].map((inst) => ({
           asset: inst.asset,
           platform: inst.platform,
@@ -475,6 +473,8 @@ function EntryForm() {
       <TriiSection
         instruments={triiInstruments}
         setInstruments={setTriiInstruments}
+        triiCash={triiCash}
+        setTriiCash={setTriiCash}
         autoFetched={autoFetched}
         fetchingPrices={fetchingPrices}
         onFetchPrices={() =>

@@ -19,23 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { useI18n } from "@/lib/i18n/context";
 import { formatCop, isSharesBased, usesVolumeEntry } from "@/lib/calculations";
 import type { InstrumentEntry, InstrumentType, EntryMode, YahooSearchResult } from "@/lib/types";
 import { useState, useEffect, useRef } from "react";
-import { RefreshCw, Zap, X, Plus, Search } from "lucide-react";
+import { RefreshCw, Zap, X, Plus, Search, Trash2 } from "lucide-react";
 
 interface Props {
   instruments: InstrumentEntry[];
   setInstruments: (instruments: InstrumentEntry[]) => void;
+  triiCash: number;
+  setTriiCash: (v: number) => void;
   autoFetched: Set<string>;
   fetchingPrices: boolean;
   onFetchPrices: () => void;
@@ -44,6 +38,8 @@ interface Props {
 export default function TriiSection({
   instruments,
   setInstruments,
+  triiCash,
+  setTriiCash,
   autoFetched,
   fetchingPrices,
   onFetchPrices,
@@ -87,7 +83,7 @@ export default function TriiSection({
       }
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchQuery, manualMode, instruments]);
+  }, [searchQuery, manualMode]);
 
   const resetDialog = () => {
     setSelectedType("fund");
@@ -169,20 +165,33 @@ export default function TriiSection({
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-base">
             <span>Trii - {t("instruments")}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onFetchPrices}
-              disabled={fetchingPrices}
-              className="h-7 text-xs text-emerald-400"
-            >
-              {fetchingPrices ? (
-                <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Zap className="mr-1 h-3 w-3" />
+            <div className="flex items-center gap-1">
+              {instruments.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setInstruments([]); setTriiCash(0); }}
+                  className="h-7 text-xs text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  {t("clearAll")}
+                </Button>
               )}
-              {fetchingPrices ? t("fetchingPrices") : "Auto-fetch"}
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onFetchPrices}
+                disabled={fetchingPrices}
+                className="h-7 text-xs text-emerald-400"
+              >
+                {fetchingPrices ? (
+                  <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                ) : (
+                  <Zap className="mr-1 h-3 w-3" />
+                )}
+                {fetchingPrices ? t("fetchingPrices") : "Auto-fetch"}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -311,6 +320,23 @@ export default function TriiSection({
             <Plus className="mr-2 h-4 w-4" />
             {t("addInstrument")}
           </Button>
+
+          <Separator className="bg-zinc-700" />
+
+          <div>
+            <Label className="text-sm text-zinc-400">
+              {t("availableCash")} (COP)
+            </Label>
+            <Input
+              type="number"
+              step="1"
+              value={triiCash || ""}
+              onChange={(e) =>
+                setTriiCash(parseFloat(e.target.value) || 0)
+              }
+              className="mt-1 border-zinc-700 bg-zinc-800"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -348,57 +374,58 @@ export default function TriiSection({
             {!manualMode ? (
               <div>
                 <Label className="text-zinc-400">{t("searchInstrument")}</Label>
-                <Command className="mt-1 rounded-lg border border-zinc-700 bg-zinc-800" shouldFilter={false}>
-                  <CommandInput
-                    placeholder="ECO, PFBCOLOM, ISA..."
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                  />
-                  <CommandList className="max-h-[200px]">
-                    {searchLoading && (
-                      <div className="py-3 text-center text-xs text-zinc-500">
-                        <Search className="mx-auto mb-1 h-4 w-4 animate-pulse" />
-                        {t("loading")}
-                      </div>
-                    )}
-                    {!searchLoading && searchQuery.length > 0 && searchResults.length === 0 && (
-                      <CommandEmpty className="py-3 text-center text-xs text-zinc-500">
-                        {t("noResults")}
-                      </CommandEmpty>
-                    )}
-                    {searchResults.length > 0 && (
-                      <CommandGroup>
-                        {searchResults.map((r) => (
-                          <CommandItem
-                            key={r.symbol}
-                            value={r.symbol}
-                            onSelect={() => {
-                              setSelectedSymbol({
-                                symbol: r.symbol,
-                                name: r.shortname || r.longname || r.symbol,
-                              });
-                              setSearchQuery("");
-                              setSearchResults([]);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <div className="flex w-full items-center justify-between">
-                              <div>
-                                <span className="font-medium">{r.symbol}</span>
-                                <span className="ml-2 text-xs text-zinc-500">
-                                  {r.shortname || r.longname}
-                                </span>
-                              </div>
-                              <span className="text-[10px] text-zinc-600">
-                                {r.exchange}
-                              </span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    )}
-                  </CommandList>
-                </Command>
+                <div className="relative mt-1">
+                  <div className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3">
+                    <Search className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <input
+                      type="text"
+                      placeholder="ECO, PFBCOLOM, ISA..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-9 w-full bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none"
+                    />
+                  </div>
+                  {searchLoading && (
+                    <div className="mt-1 rounded-lg border border-zinc-700 bg-zinc-800 py-3 text-center text-xs text-zinc-500">
+                      <Search className="mx-auto mb-1 h-4 w-4 animate-pulse" />
+                      {t("loading")}
+                    </div>
+                  )}
+                  {!searchLoading && searchQuery.length > 0 && searchResults.length === 0 && (
+                    <div className="mt-1 rounded-lg border border-zinc-700 bg-zinc-800 py-3 text-center text-xs text-zinc-500">
+                      {t("noResults")}
+                    </div>
+                  )}
+                  {searchResults.length > 0 && (
+                    <div className="mt-1 max-h-[200px] overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-800">
+                      {searchResults.map((r) => (
+                        <button
+                          key={r.symbol}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSymbol({
+                              symbol: r.symbol,
+                              name: r.shortname || r.longname || r.symbol,
+                            });
+                            setSearchQuery("");
+                            setSearchResults([]);
+                          }}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-zinc-700 active:bg-zinc-600"
+                        >
+                          <div>
+                            <span className="font-medium text-sm text-zinc-200">{r.symbol}</span>
+                            <span className="ml-2 text-xs text-zinc-500">
+                              {r.shortname || r.longname}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-zinc-600">
+                            {r.exchange}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {selectedSymbol && (
                   <div className="mt-2 flex items-center gap-2">

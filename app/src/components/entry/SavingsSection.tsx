@@ -23,7 +23,7 @@ import { formatCop } from "@/lib/calculations";
 import type { SavingsEntry, Language } from "@/lib/types";
 import { COLOMBIAN_BANKS, SAVINGS_PRODUCT_TYPES } from "@/data/colombian-banks";
 import { useState } from "react";
-import { Plus, X, Wallet, Clock } from "lucide-react";
+import { Plus, X, Wallet, Clock, Trash2 } from "lucide-react";
 
 interface Props {
   entries: SavingsEntry[];
@@ -87,7 +87,20 @@ export default function SavingsSection({ entries, setEntries }: Props) {
     <>
       <Card className="border-zinc-800 bg-zinc-900">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t("savingsAndCdts")}</CardTitle>
+          <CardTitle className="flex items-center justify-between text-base">
+            <span>{t("savingsAndCdts")}</span>
+            {entries.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEntries([])}
+                className="h-7 text-xs text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                {t("clearAll")}
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {banks.map((bank) => {
