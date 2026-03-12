@@ -261,8 +261,10 @@ export async function saveSnapshot(formData: EntryFormData): Promise<void> {
     prevTotal && prevTotal !== 0 ? (dailyChange! / prevTotal) * 100 : null;
 
   // Delete existing data for this date (upsert approach)
-  await supabase.from("snapshot_positions").delete().eq("snapshot_date", date);
-  await supabase.from("snapshot_savings").delete().eq("snapshot_date", date);
+  const { error: delPosErr } = await supabase.from("snapshot_positions").delete().eq("snapshot_date", date);
+  if (delPosErr) throw new Error(`Delete positions: ${delPosErr.message}`);
+  const { error: delSavErr } = await supabase.from("snapshot_savings").delete().eq("snapshot_date", date);
+  if (delSavErr) throw new Error(`Delete savings: ${delSavErr.message}`);
 
   // Upsert snapshot
   const { error: snapError } = await supabase.from("snapshots").upsert(
@@ -279,7 +281,7 @@ export async function saveSnapshot(formData: EntryFormData): Promise<void> {
     },
     { onConflict: "date" }
   );
-  if (snapError) throw snapError;
+  if (snapError) throw new Error(`Upsert snapshot: ${snapError.message}`);
 
   // Insert related data
   const inserts = [];
@@ -294,7 +296,7 @@ export async function saveSnapshot(formData: EntryFormData): Promise<void> {
 
   const results = await Promise.all(inserts);
   for (const result of results) {
-    if (result.error) throw result.error;
+    if (result.error) throw new Error(`Insert data: ${result.error.message}`);
   }
 }
 

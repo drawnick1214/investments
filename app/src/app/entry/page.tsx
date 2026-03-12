@@ -381,9 +381,14 @@ function EntryForm() {
       await saveSnapshot(formData);
       toast.success(t("saved"));
       router.push("/");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error saving:", err);
-      toast.error(String(err));
+      const msg = err instanceof Error
+        ? err.message
+        : typeof err === "object" && err !== null && "message" in err
+          ? String((err as Record<string, unknown>).message)
+          : JSON.stringify(err);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
