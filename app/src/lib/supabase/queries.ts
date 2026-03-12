@@ -86,6 +86,17 @@ export async function updateInstrumentConfig(
   if (error) throw error;
 }
 
+// Recent snapshot dates (for template dropdown)
+export async function getRecentSnapshotDates(limit = 3): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("snapshots")
+    .select("date")
+    .order("date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data || []).map((d) => d.date);
+}
+
 // Snapshots
 export async function getLatestSnapshot(): Promise<FullSnapshot | null> {
   const { data: snapshots } = await supabase

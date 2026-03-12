@@ -6,11 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useI18n } from "@/lib/i18n/context";
 import {
   getPortfolioConfig,
   getLatestSnapshot,
   getSnapshotByDate,
+  getRecentSnapshotDates,
   saveSnapshot,
   addInstrumentToConfig,
 } from "@/lib/supabase/queries";
@@ -93,6 +101,12 @@ function EntryForm() {
   const [triiInstruments, setTriiInstruments] = useState<InstrumentEntry[]>([]);
   const [savingsEntries, setSavingsEntries] = useState<SavingsEntry[]>([]);
   const [autoFetched, setAutoFetched] = useState<Set<string>>(new Set());
+  const [recentDates, setRecentDates] = useState<string[]>([]);
+  const [configsRef, setConfigsRef] = useState<{
+    xtb: PortfolioConfig[];
+    trii: PortfolioConfig[];
+    savings: PortfolioConfig[];
+  }>({ xtb: [], trii: [], savings: [] });
 
   const fetchPrices = useCallback(
     async (instruments: InstrumentEntry[]) => {
@@ -160,13 +174,61 @@ function EntryForm() {
     }
   }, []);
 
+  const loadSnapshotTemplate = useCallback(
+    async (
+      templateDate: string,
+      xtbConfigs: PortfolioConfig[],
+      triiConfigs: PortfolioConfig[],
+      savingsConfigs: PortfolioConfig[]
+    ) => {
+      const snapshot = await getSnapshotByDate(templateDate);
+      if (!snapshot) return;
+
+      const snap = snapshot.snapshot;
+      setTrm(Number(snap.trm));
+      setXtbMargin(Number(snap.xtb_margin) || 0);
+      setXtbCash(Number(snap.xtb_cash) || 0);
+
+      const priceMap: Record<string, number> = {};
+      for (const pos of snapshot.positions) {
+        priceMap[pos.asset] = Number(pos.current_price);
+      }
+      const planValueMap: Record<string, number> = {};
+      for (const plan of snapshot.plans) {
+        planValueMap[plan.name] = Number(plan.current_value);
+      }
+      const fundValueMap: Record<string, number> = {};
+      for (const fund of snapshot.funds) {
+        fundValueMap[fund.name] = Number(fund.current_value);
+      }
+      const savingsMap: Record<string, number> = {};
+      for (const s of snapshot.savings) {
+        savingsMap[s.name] = Number(s.balance_cop);
+      }
+
+      setXtbInstruments(
+        xtbConfigs.map((c) => {
+          const price = priceMap[c.asset] || planValueMap[c.asset] || 0;
+          return configToInstrument(c, price);
+        })
+      );
+      setTriiInstruments(
+        triiConfigs.map((c) => {
+          const price = priceMap[c.asset] || fundValueMap[c.asset] || 0;
+          return configToInstrument(c, price);
+        })
+      );
+      setSavingsEntries(
+        savingsConfigs.map((c) => configToSaving(c, savingsMap[c.asset]))
+      );
+    },
+    []
+  );
+
   useEffect(() => {
     async function init() {
       try {
-        const [cfg, latestOrEdit] = await Promise.all([
-          getPortfolioConfig(),
-          editDate ? getSnapshotByDate(editDate) : getLatestSnapshot(),
-        ]);
+        const cfg = await getPortfolioConfig();
 
         // Build instrument arrays from config
         const xtbConfigs = cfg.filter(
@@ -181,70 +243,37 @@ function EntryForm() {
         );
         const savingsConfigs = cfg.filter((c) => c.category === "savings");
 
-        // Overlay with snapshot data
-        if (latestOrEdit) {
-          const snap = latestOrEdit.snapshot;
-          if (editDate) setDate(snap.date);
-          setTrm(Number(snap.trm));
-          setXtbMargin(Number(snap.xtb_margin) || 0);
-          setXtbCash(Number(snap.xtb_cash) || 0);
+        // Store configs for template loading
+        setConfigsRef({ xtb: xtbConfigs, trii: triiConfigs, savings: savingsConfigs });
 
-          // Build price maps from positions + plans + funds
-          const priceMap: Record<string, number> = {};
-          for (const pos of latestOrEdit.positions) {
-            priceMap[pos.asset] = Number(pos.current_price);
+        if (editDate) {
+          // Edit mode: load exact snapshot
+          const snapshot = await getSnapshotByDate(editDate);
+          if (snapshot) {
+            await loadSnapshotTemplate(editDate, xtbConfigs, triiConfigs, savingsConfigs);
+            setDate(snapshot.snapshot.date);
+          } else {
+            setXtbInstruments(xtbConfigs.map((c) => configToInstrument(c)));
+            setTriiInstruments(triiConfigs.map((c) => configToInstrument(c)));
+            setSavingsEntries(savingsConfigs.map((c) => configToSaving(c)));
           }
-          const planValueMap: Record<string, number> = {};
-          for (const plan of latestOrEdit.plans) {
-            planValueMap[plan.name] = Number(plan.current_value);
-          }
-          const fundValueMap: Record<string, number> = {};
-          for (const fund of latestOrEdit.funds) {
-            fundValueMap[fund.name] = Number(fund.current_value);
-          }
-          const savingsMap: Record<string, number> = {};
-          for (const s of latestOrEdit.savings) {
-            savingsMap[s.name] = Number(s.balance_cop);
-          }
-
-          setXtbInstruments(
-            xtbConfigs.map((c) => {
-              const price =
-                priceMap[c.asset] ||
-                planValueMap[c.asset] ||
-                0;
-              return configToInstrument(c, price);
-            })
-          );
-          setTriiInstruments(
-            triiConfigs.map((c) => {
-              const price =
-                priceMap[c.asset] ||
-                fundValueMap[c.asset] ||
-                0;
-              return configToInstrument(c, price);
-            })
-          );
-          setSavingsEntries(
-            savingsConfigs.map((c) =>
-              configToSaving(c, savingsMap[c.asset])
-            )
-          );
         } else {
-          // No snapshot — just use config defaults
+          // New mode: start EMPTY (configs with price=0)
           setXtbInstruments(xtbConfigs.map((c) => configToInstrument(c)));
           setTriiInstruments(triiConfigs.map((c) => configToInstrument(c)));
           setSavingsEntries(savingsConfigs.map((c) => configToSaving(c)));
-        }
 
-        // Auto-fetch for new entries
-        if (!editDate) {
+          // Load recent snapshot dates for template dropdown
+          const dates = await getRecentSnapshotDates(3);
+          setRecentDates(dates);
+
+          // Auto-fetch stock prices and TRM
           const allInstruments = [
             ...xtbConfigs.map((c) => configToInstrument(c)),
             ...triiConfigs.map((c) => configToInstrument(c)),
           ].filter((i) => i.ticker && usesVolumeEntry(i.instrument_type, i.entry_mode));
           fetchPrices(allInstruments);
-          if (!latestOrEdit) fetchTrm();
+          fetchTrm();
         }
       } catch (err) {
         console.error("Error loading config:", err);
@@ -253,7 +282,7 @@ function EntryForm() {
       }
     }
     init();
-  }, [editDate, fetchPrices, fetchTrm]);
+  }, [editDate, fetchPrices, fetchTrm, loadSnapshotTemplate]);
 
   const handleSave = async () => {
     if (trm <= 0) {
@@ -375,6 +404,31 @@ function EntryForm() {
       <h2 className="text-xl font-bold">
         {editDate ? t("editEntry") : t("dailyEntry")}
       </h2>
+
+      {/* Load from previous snapshot */}
+      {!editDate && recentDates.length > 0 && (
+        <Select
+          onValueChange={async (templateDate) => {
+            await loadSnapshotTemplate(
+              templateDate,
+              configsRef.xtb,
+              configsRef.trii,
+              configsRef.savings
+            );
+          }}
+        >
+          <SelectTrigger className="border-zinc-700 bg-zinc-800 text-zinc-300">
+            <SelectValue placeholder={t("loadFromSnapshot")} />
+          </SelectTrigger>
+          <SelectContent className="border-zinc-700 bg-zinc-900">
+            {recentDates.map((d) => (
+              <SelectItem key={d} value={d}>
+                {d}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {/* Date & TRM */}
       <Card className="border-zinc-800 bg-zinc-900">

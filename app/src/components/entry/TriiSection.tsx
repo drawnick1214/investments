@@ -109,11 +109,11 @@ export default function TriiSection({
     setAddDialog(true);
   };
 
-  const updateProfitability = (id: string, profitability: number) => {
+  const updateProfitability = (id: string, percentage: number) => {
     setInstruments(
       instruments.map((inst) =>
         inst.id === id
-          ? { ...inst, current_price: inst.invested + profitability }
+          ? { ...inst, current_price: inst.invested * (1 + percentage / 100) }
           : inst
       )
     );
@@ -153,7 +153,7 @@ export default function TriiSection({
       currency: "COP",
       shares: volumeBased ? newShares : 0,
       avg_cost: volumeBased ? newAvgCost : 0,
-      current_price: volumeBased ? 0 : invested + newProfitability,
+      current_price: volumeBased ? 0 : invested * (1 + newProfitability / 100),
       invested,
     };
 
@@ -248,9 +248,11 @@ export default function TriiSection({
               );
             }
 
-            // Value-based: invested + rentabilidad
-            const profitability = price - inst.invested;
-            const pnlColor = profitability >= 0 ? "text-emerald-400" : "text-red-400";
+            // Value-based: invested × (1 + pct/100)
+            const profitabilityPct = inst.invested !== 0
+              ? ((price - inst.invested) / inst.invested) * 100
+              : 0;
+            const pnlColor = profitabilityPct >= 0 ? "text-emerald-400" : "text-red-400";
 
             return (
               <div key={inst.id} className="space-y-1">
@@ -279,20 +281,20 @@ export default function TriiSection({
                 <div className="flex gap-2">
                   <Input
                     type="number"
-                    step="1"
-                    value={profitability || ""}
+                    step="0.01"
+                    value={profitabilityPct ? parseFloat(profitabilityPct.toFixed(2)) : ""}
                     onChange={(e) =>
                       updateProfitability(inst.id, parseFloat(e.target.value) || 0)
                     }
                     className="border-zinc-700 bg-zinc-800"
-                    placeholder={t("profitability") + " (COP)"}
+                    placeholder={t("profitability")}
                   />
                   <div className="flex min-w-[100px] flex-col items-end justify-center">
                     <span className="text-sm font-medium text-zinc-400">
                       {formatCop(price)}
                     </span>
                     <span className={`text-[10px] font-medium ${pnlColor}`}>
-                      {profitability >= 0 ? "+" : ""}{formatCop(profitability)}
+                      {profitabilityPct >= 0 ? "+" : ""}{profitabilityPct.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -538,16 +540,17 @@ export default function TriiSection({
                     </div>
                     <div>
                       <Label className="text-zinc-400">
-                        {t("profitability")} (COP)
+                        {t("profitability")}
                       </Label>
                       <Input
                         type="number"
-                        step="1"
+                        step="0.01"
                         value={newProfitability || ""}
                         onChange={(e) =>
                           setNewProfitability(parseFloat(e.target.value) || 0)
                         }
                         className="mt-1 border-zinc-700 bg-zinc-800"
+                        placeholder="ej. 3.5 o -2.1"
                       />
                     </div>
                   </div>
