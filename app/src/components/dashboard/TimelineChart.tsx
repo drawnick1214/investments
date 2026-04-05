@@ -114,7 +114,7 @@ export default function TimelineChart({ snapshots }: Props) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number | undefined) => [formatUsd(value ?? 0), "Total"]}
+              formatter={(value: unknown) => [formatUsd(typeof value === "number" ? value : 0), "Total"]}
               labelStyle={{ color: "#a1a1aa" }}
             />
             <Area

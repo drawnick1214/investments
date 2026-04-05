@@ -92,8 +92,8 @@ export default function CumulativeReturnChart({ snapshots }: Props) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number | undefined) => [
-                formatPercent(value ?? 0),
+              formatter={(value: unknown) => [
+                formatPercent(typeof value === "number" ? value : 0),
                 t("cumulativeReturn"),
               ]}
             />

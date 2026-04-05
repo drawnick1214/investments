@@ -107,9 +107,9 @@ export default function AssetPerformanceChart({ positions }: Props) {
                 borderRadius: "8px",
                 fontSize: "11px",
               }}
-              formatter={(value: number | undefined, name: string | undefined) => [
-                formatPercent(value ?? 0),
-                name ?? "",
+              formatter={(value: unknown, name: unknown) => [
+                formatPercent(typeof value === "number" ? value : 0),
+                typeof name === "string" ? name : "",
               ]}
             />
             <Legend

@@ -78,8 +78,8 @@ export default function TrmChart({ snapshots }: Props) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number | undefined) => [
-                formatCop(value ?? 0),
+              formatter={(value: unknown) => [
+                formatCop(typeof value === "number" ? value : 0),
                 "TRM",
               ]}
             />

@@ -142,8 +142,8 @@ export default function WeeklyMonthlyChart({ snapshots }: Props) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number | undefined) => [
-                formatUsd(value ?? 0),
+              formatter={(value: unknown) => [
+                formatUsd(typeof value === "number" ? value : 0),
                 t("change"),
               ]}
             />

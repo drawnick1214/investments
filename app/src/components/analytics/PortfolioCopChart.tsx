@@ -125,14 +125,12 @@ export default function PortfolioCopChart({ snapshots }: Props) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(
-                value: number | undefined,
-                name: string | undefined,
-              ) => {
-                const v = value ?? 0;
-                if (name === "usd") return [formatUsd(v), "USD"];
-                if (name === "cop") return [formatCop(v), "COP"];
-                return [v, name ?? ""];
+              formatter={(value: unknown, name: unknown) => {
+                const v = typeof value === "number" ? value : 0;
+                const n = typeof name === "string" ? name : "";
+                if (n === "usd") return [formatUsd(v), "USD"];
+                if (n === "cop") return [formatCop(v), "COP"];
+                return [String(v), n];
               }}
               labelStyle={{ color: "#a1a1aa" }}
             />
