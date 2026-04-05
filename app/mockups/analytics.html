@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        zinc: {
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 p-4 min-h-screen">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-zinc-400 hover:text-zinc-300">← Volver</a>
+                <h1 class="text-2xl font-bold">📊 ANALÍTICAS</h1>
+            </div>
+            <div class="flex gap-2">
+                <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium">USD</button>
+                <button class="px-4 py-2 bg-zinc-800 text-zinc-400 rounded-lg text-sm">COP</button>
+            </div>
+        </header>
+
+        <!-- Performance Summary -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                🎯 Performance Real
+                <span class="text-xs text-zinc-500 font-normal">(sin depósitos/retiros)</span>
+            </h2>
+
+            <div class="grid grid-cols-4 gap-6">
+                <div>
+                    <div class="text-zinc-400 text-sm mb-1">Total Portfolio Value</div>
+                    <div class="text-2xl font-bold">$3,850.72</div>
+                </div>
+                <div>
+                    <div class="text-zinc-400 text-sm mb-1">Cash Flows (net)</div>
+                    <div class="text-2xl font-bold text-zinc-400">-$3,450.00</div>
+                </div>
+                <div class="border-l border-zinc-800 pl-6">
+                    <div class="text-zinc-400 text-sm mb-1">🎉 Real P&L</div>
+                    <div class="text-3xl font-bold text-emerald-400">+$400.72</div>
+                </div>
+                <div>
+                    <div class="text-zinc-400 text-sm mb-1">📈 Return</div>
+                    <div class="text-3xl font-bold text-emerald-400">+11.6%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">📈 Evolución en el Tiempo</h3>
+                <div class="flex gap-4 text-xs">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                        <span class="text-zinc-400">Valor Total</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-emerald-500 rounded"></div>
+                        <span class="text-zinc-400">Sin Cash Flows (Real P&L)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <span class="text-zinc-400">Depósitos/Retiros</span>
+                    </div>
+                </div>
+            </div>
+
+            <canvas id="portfolioChart" height="80"></canvas>
+        </div>
+
+        <!-- Cash Flow History -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">💵 Historial de Cash Flows</h3>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-sm text-zinc-500 border-b border-zinc-800">
+                            <th class="pb-3 font-medium">Fecha</th>
+                            <th class="pb-3 font-medium">Tipo</th>
+                            <th class="pb-3 font-medium">Monto</th>
+                            <th class="pb-3 font-medium">Cuenta</th>
+                            <th class="pb-3 font-medium">Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr class="border-b border-zinc-800/50">
+                            <td class="py-3 text-zinc-400">2026-03-15</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded text-xs">💵 Ingreso</span>
+                            </td>
+                            <td class="py-3 font-semibold text-emerald-400">+$500.00</td>
+                            <td class="py-3 text-zinc-400">XTB Cash</td>
+                            <td class="py-3 text-zinc-500">Depósito mensual</td>
+                        </tr>
+                        <tr class="border-b border-zinc-800/50">
+                            <td class="py-3 text-zinc-400">2026-03-10</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 bg-red-900/30 text-red-400 rounded text-xs">💸 Retiro</span>
+                            </td>
+                            <td class="py-3 font-semibold text-red-400">-$100.00</td>
+                            <td class="py-3 text-zinc-400">XTB Cash</td>
+                            <td class="py-3 text-zinc-500">Gastos personales</td>
+                        </tr>
+                        <tr class="border-b border-zinc-800/50">
+                            <td class="py-3 text-zinc-400">2026-02-20</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded text-xs">💵 Ingreso</span>
+                            </td>
+                            <td class="py-3 font-semibold text-emerald-400">+$1,000.00</td>
+                            <td class="py-3 text-zinc-400">Trii Cash</td>
+                            <td class="py-3 text-zinc-500">Inversión inicial Trii</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 text-zinc-400">2026-01-15</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded text-xs">💵 Ingreso</span>
+                            </td>
+                            <td class="py-3 font-semibold text-emerald-400">+$2,500.00</td>
+                            <td class="py-3 text-zinc-400">XTB Cash</td>
+                            <td class="py-3 text-zinc-500">Inversión inicial XTB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-zinc-800 grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <div class="text-zinc-500 mb-1">Total Depósitos</div>
+                    <div class="text-xl font-bold text-emerald-400">+$4,000.00</div>
+                </div>
+                <div>
+                    <div class="text-zinc-500 mb-1">Total Retiros</div>
+                    <div class="text-xl font-bold text-red-400">-$100.00</div>
+                </div>
+                <div>
+                    <div class="text-zinc-500 mb-1">Inversión Neta</div>
+                    <div class="text-xl font-bold">$3,900.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Performance -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">📊 Performance XTB</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-zinc-400">Invertido:</span>
+                        <span class="font-semibold">$2,000.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-400">Valor Actual:</span>
+                        <span class="font-semibold">$2,100.50</span>
+                    </div>
+                    <div class="flex justify-between border-t border-zinc-800 pt-3">
+                        <span class="text-zinc-400">Return:</span>
+                        <span class="font-semibold text-emerald-400">+5.2%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">📊 Performance Trii</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-zinc-400">Invertido:</span>
+                        <span class="font-semibold">$1,000.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-400">Valor Actual:</span>
+                        <span class="font-semibold">$1,200.00</span>
+                    </div>
+                    <div class="flex justify-between border-t border-zinc-800 pt-3">
+                        <span class="text-zinc-400">Return:</span>
+                        <span class="font-semibold text-emerald-400">+2.1%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="mt-8 flex justify-center gap-4 text-sm text-zinc-500">
+            <a href="index.html" class="hover:text-zinc-300">Dashboard</a>
+            <span>·</span>
+            <a href="analytics.html" class="text-emerald-400 font-medium">Analytics</a>
+            <span>·</span>
+            <a href="#" class="hover:text-zinc-300">History</a>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('portfolioChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr'],
+                datasets: [
+                    {
+                        label: 'Valor Total',
+                        data: [2500, 3100, 3700, 3850],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Sin Cash Flows',
+                        data: [2500, 2650, 3300, 3450],
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgb(24, 24, 27)',
+                        titleColor: 'rgb(161, 161, 170)',
+                        bodyColor: 'rgb(244, 244, 245)',
+                        borderColor: 'rgb(63, 63, 70)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        grid: {
+                            color: 'rgb(39, 39, 42)'
+                        },
+                        ticks: {
+                            color: 'rgb(113, 113, 122)',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgb(39, 39, 42)'
+                        },
+                        ticks: {
+                            color: 'rgb(113, 113, 122)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

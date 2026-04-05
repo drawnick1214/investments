@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retiro de Dinero - Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        zinc: {
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 p-4 min-h-screen">
+    <div class="max-w-2xl mx-auto py-8">
+        <!-- Header -->
+        <div class="mb-8 flex items-center justify-between">
+            <a href="select-type.html" class="text-zinc-400 hover:text-zinc-300 flex items-center gap-2">
+                ← Volver
+            </a>
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                💸 <span class="text-red-400">RETIRO DE DINERO</span>
+            </h1>
+            <div class="w-20"></div>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <form class="space-y-6">
+                <!-- Date -->
+                <div>
+                    <label class="block text-zinc-400 text-sm mb-2">📅 Fecha</label>
+                    <input
+                        type="date"
+                        value="2026-03-17"
+                        class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 focus:border-red-500 focus:outline-none"
+                    >
+                </div>
+
+                <!-- Amount & Currency -->
+                <div>
+                    <label class="block text-zinc-400 text-sm mb-2">💰 Monto</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input
+                            type="number"
+                            placeholder="100.00"
+                            step="0.01"
+                            class="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 focus:border-red-500 focus:outline-none"
+                        >
+                        <select class="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 focus:border-red-500 focus:outline-none">
+                            <option>USD</option>
+                            <option>COP</option>
+                            <option>EUR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Source Account -->
+                <div>
+                    <label class="block text-zinc-400 text-sm mb-2">🏦 Origen</label>
+                    <select class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 focus:border-red-500 focus:outline-none">
+                        <option>XTB - Cash</option>
+                        <option>Trii - Cash</option>
+                        <option>Cuenta Ahorros Nu</option>
+                        <option>CDT_AUG_26 - Nu Colombia</option>
+                        <option>CDT_APR_26 - Nu Colombia</option>
+                    </select>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-zinc-400 text-sm mb-2">📝 Notas (opcional)</label>
+                    <textarea
+                        rows="3"
+                        placeholder="Ej: Pago de arriendo"
+                        class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 focus:border-red-500 focus:outline-none resize-none"
+                    ></textarea>
+                </div>
+
+                <!-- Conversion Info -->
+                <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+                    <div class="text-sm text-zinc-400 mb-1">💱 Conversión automática:</div>
+                    <div class="text-lg font-semibold">
+                        100.00 USD = <span class="text-red-400">369,187 COP</span>
+                    </div>
+                    <div class="text-xs text-zinc-500 mt-1">TRM: 3,691.87</div>
+                </div>
+
+                <!-- Warning -->
+                <div class="bg-red-900/20 border border-red-800/50 rounded-lg p-4">
+                    <div class="flex gap-3">
+                        <div class="text-red-400 text-xl">⚠️</div>
+                        <div class="text-sm text-zinc-300">
+                            Este dinero <span class="font-semibold text-red-400">saldrá completamente</span> del portafolio y afectará tus métricas de rendimiento.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3 pt-4">
+                    <a href="select-type.html" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold py-3 rounded-lg text-center transition-colors">
+                        Cancelar
+                    </a>
+                    <button
+                        type="submit"
+                        class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold py-3 rounded-lg transition-colors"
+                    >
+                        ✅ Guardar Retiro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
