@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 
-async function fetchTrmFromGov(): Promise<number | null> {
+async function fetchTrmFromGov(date?: string): Promise<number | null> {
   try {
-    const today = new Date().toISOString().split("T")[0];
-    const url = `https://www.datos.gov.co/resource/ceyp-9c7c.json?$where=vigenciahasta >= '${today}'&$order=vigenciahasta DESC&$limit=1`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const targetDate = date || new Date().toISOString().split("T")[0];
+    // Get TRM where targetDate is within validity period (vigenciadesde <= targetDate <= vigenciahasta)
+    const url = `https://www.datos.gov.co/resource/ceyp-9c7c.json?$where=vigenciadesde <= '${targetDate}' AND vigenciahasta >= '${targetDate}'&$order=vigenciadesde DESC&$limit=1`;
+    const res = await fetch(url, {
+      next: { revalidate: 3600 },
+      cache: date ? 'force-cache' : 'no-store' // Cache historical TRM
+    });
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.length > 0) {
@@ -30,8 +34,11 @@ async function fetchTrmFallback(): Promise<number | null> {
   }
 }
 
-export async function GET() {
-  let trm = await fetchTrmFromGov();
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const date = searchParams.get("date"); // Optional: YYYY-MM-DD for historical TRM
+
+  let trm = await fetchTrmFromGov(date || undefined);
   let source = "datos.gov.co";
 
   if (!trm) {
@@ -46,5 +53,9 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ trm, source });
+  return NextResponse.json({
+    trm,
+    source,
+    date: date || "current",
+  });
 }

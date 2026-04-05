@@ -162,3 +162,31 @@ export interface EntryFormData {
 }
 
 export type Language = "es" | "en";
+
+// Cash Flows
+export type CashFlowType = 'deposit' | 'withdrawal' | 'transfer';
+export type Currency = 'USD' | 'COP' | 'EUR';
+
+export interface CashFlow {
+  id: string;
+  date: string;
+  type: CashFlowType;
+  amount: number;
+  currency: Currency;
+  account: string | null;
+  from_account: string | null;
+  to_account: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface CashFlowFormData {
+  date: string;
+  type: CashFlowType;
+  amount: number;
+  currency: Currency;
+  account?: string;
+  from_account?: string;
+  to_account?: string;
+  notes?: string;
+}

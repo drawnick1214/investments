@@ -8,7 +8,8 @@ import {
   getSnapshotsInRange,
   getPositionsInRange,
 } from "@/lib/supabase/queries";
-import type { Snapshot, SnapshotPosition } from "@/lib/types";
+import { getAllCashFlows } from "@/lib/supabase/cash-flows";
+import type { Snapshot, SnapshotPosition, CashFlow } from "@/lib/types";
 import {
   getWtdComparison,
   getMtdComparison,
@@ -26,6 +27,7 @@ import WeeklyMonthlyChart from "@/components/analytics/WeeklyMonthlyChart";
 import AssetPerformanceChart from "@/components/analytics/AssetPerformanceChart";
 import TrmChart from "@/components/analytics/TrmChart";
 import PeriodComparison from "@/components/analytics/PeriodComparison";
+import CashFlowsPerformance from "@/components/analytics/CashFlowsPerformance";
 
 interface ComparisonEntry {
   current: Snapshot[];
@@ -43,7 +45,9 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("30d");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [positions, setPositions] = useState<SnapshotPosition[]>([]);
+  const [cashFlows, setCashFlows] = useState<CashFlow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCop, setShowCop] = useState(false);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -70,13 +74,15 @@ export default function AnalyticsPage() {
             : getPeriodStartDate(period);
         const endDate = period === "custom" ? customEndDate : todayStr;
 
-        const [snaps, pos] = await Promise.all([
+        const [snaps, pos, flows] = await Promise.all([
           getSnapshotsInRange(startDate, endDate),
           getPositionsInRange(startDate, endDate),
+          getAllCashFlows().catch(() => []), // Graceful fallback if table doesn't exist
         ]);
 
         setSnapshots(snaps);
         setPositions(pos);
+        setCashFlows(flows);
       } catch (err) {
         console.error("Error loading analytics:", err);
       } finally {
@@ -123,10 +129,36 @@ export default function AnalyticsPage() {
     loadComparisons();
   }, []);
 
+  const avgTrm = snapshots.length > 0
+    ? snapshots.reduce((sum, s) => sum + Number(s.trm), 0) / snapshots.length
+    : 3691.87;
+
   return (
     <div className="space-y-5 px-4 py-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t("analytics")}</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCop(false)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+              !showCop
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-800 text-zinc-400 hover:text-zinc-300"
+            }`}
+          >
+            USD
+          </button>
+          <button
+            onClick={() => setShowCop(true)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+              showCop
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-800 text-zinc-400 hover:text-zinc-300"
+            }`}
+          >
+            COP
+          </button>
+        </div>
       </div>
 
       <PeriodSelector
@@ -148,7 +180,20 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <>
-          <PeriodSummary snapshots={snapshots} />
+          <CashFlowsPerformance
+            snapshots={snapshots}
+            cashFlows={cashFlows}
+            showCop={showCop}
+            trm={avgTrm}
+          />
+
+          <Separator className="bg-zinc-800" />
+          <PeriodSummary
+            snapshots={snapshots}
+            cashFlows={cashFlows}
+            showCop={showCop}
+            trm={avgTrm}
+          />
 
           <Separator className="bg-zinc-800" />
           <PortfolioCopChart snapshots={snapshots} />

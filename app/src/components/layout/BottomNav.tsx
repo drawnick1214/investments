@@ -44,7 +44,7 @@ export default function BottomNav() {
           );
         })}
         <Link
-          href="/entry"
+          href="/new"
           className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-black shadow-lg shadow-emerald-500/25 transition-transform hover:scale-105 active:scale-95 -mt-4"
         >
           <Plus className="h-6 w-6" strokeWidth={2.5} />

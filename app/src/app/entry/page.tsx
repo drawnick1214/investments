@@ -34,7 +34,7 @@ import type {
 import XtbSection from "@/components/entry/XtbSection";
 import TriiSection from "@/components/entry/TriiSection";
 import SavingsSection from "@/components/entry/SavingsSection";
-import { RefreshCw, Save } from "lucide-react";
+import { RefreshCw, Save, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 function configToInstrument(
@@ -90,6 +90,7 @@ function EntryForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fetchingPrices, setFetchingPrices] = useState(false);
+  const [fetchingTrm, setFetchingTrm] = useState(false);
 
   const [date, setDate] = useState(
     editDate || new Date().toISOString().split("T")[0]
@@ -110,7 +111,7 @@ function EntryForm() {
   }>({ xtb: [], trii: [], savings: [] });
 
   const fetchPrices = useCallback(
-    async (instruments: InstrumentEntry[]) => {
+    async (instruments: InstrumentEntry[], targetDate?: string) => {
       const tickers = instruments
         .map((i) => i.ticker)
         .filter(Boolean)
@@ -119,16 +120,26 @@ function EntryForm() {
 
       setFetchingPrices(true);
       try {
-        const res = await fetch(`/api/stocks?tickers=${tickers}`);
+        const dateParam = targetDate ? `&date=${targetDate}` : '';
+        const res = await fetch(`/api/stocks?tickers=${tickers}${dateParam}`, {
+          cache: 'no-store'
+        });
         const data = await res.json();
         if (data.prices) {
           const priceMap: Record<string, number> = {};
           const fetched = new Set<string>();
+          let successCount = 0;
           for (const p of data.prices) {
             if (p.price !== null) {
               priceMap[p.ticker] = p.price;
               fetched.add(p.ticker);
+              successCount++;
             }
+          }
+
+          if (successCount > 0) {
+            const dateLabel = targetDate ? ` (${targetDate})` : '';
+            toast.success(`${successCount} precios actualizados${dateLabel}`);
           }
 
           // Update both xtb and trii instruments
@@ -165,13 +176,24 @@ function EntryForm() {
     []
   );
 
-  const fetchTrm = useCallback(async () => {
+  const fetchTrm = useCallback(async (targetDate?: string) => {
+    setFetchingTrm(true);
     try {
-      const res = await fetch("/api/trm");
+      const dateParam = targetDate ? `?date=${targetDate}` : '';
+      const res = await fetch(`/api/trm${dateParam}`, { cache: 'no-store' });
       const data = await res.json();
-      if (data.trm) setTrm(data.trm);
+      if (data.trm) {
+        setTrm(data.trm);
+        const dateLabel = targetDate ? ` (${targetDate})` : '';
+        toast.success(`TRM: ${data.trm.toFixed(2)} (${data.source})${dateLabel}`);
+      } else {
+        toast.error("No se pudo obtener el TRM");
+      }
     } catch (err) {
       console.error("Error fetching TRM:", err);
+      toast.error("Error al obtener el TRM");
+    } finally {
+      setFetchingTrm(false);
     }
   }, []);
 
@@ -191,38 +213,61 @@ function EntryForm() {
       setXtbCash(Number(snap.xtb_cash) || 0);
       setTriiCash(Number(snap.trii_cash) || 0);
 
-      const priceMap: Record<string, number> = {};
+      // Load instruments DIRECTLY from snapshot positions
+      const xtbInsts: InstrumentEntry[] = [];
+      const triiInsts: InstrumentEntry[] = [];
+
       for (const pos of snapshot.positions) {
-        priceMap[pos.asset] = Number(pos.current_price);
-      }
-      const planValueMap: Record<string, number> = {};
-      for (const plan of snapshot.plans) {
-        planValueMap[plan.name] = Number(plan.current_value);
-      }
-      const fundValueMap: Record<string, number> = {};
-      for (const fund of snapshot.funds) {
-        fundValueMap[fund.name] = Number(fund.current_value);
-      }
-      const savingsMap: Record<string, number> = {};
-      for (const s of snapshot.savings) {
-        savingsMap[s.name] = Number(s.balance_cop);
+        const instrType = (pos.instrument_type as InstrumentType) || "stock";
+
+        // Auto-detect entry mode from snapshot data:
+        // If shares/avg_cost are 0 but invested > 0, it's value-based
+        // Otherwise, use the default for the instrument type
+        const hasShares = Number(pos.shares || 0) > 0 || Number(pos.avg_cost || 0) > 0;
+        const hasInvested = Number(pos.invested || 0) > 0;
+        const entryMode: EntryMode =
+          hasInvested && !hasShares ? "value" :
+          isSharesBased(instrType) ? "shares" : "value";
+
+        const volumeBased = usesVolumeEntry(instrType, entryMode);
+
+        const entry: InstrumentEntry = {
+          id: `snapshot_${pos.asset}`, // Temporary ID from snapshot
+          asset: pos.asset,
+          ticker: pos.ticker || null,
+          instrument_type: instrType,
+          entry_mode: entryMode,
+          platform: pos.platform,
+          currency: pos.currency,
+          shares: volumeBased ? Number(pos.shares || 0) : 0,
+          avg_cost: volumeBased ? Number(pos.avg_cost || 0) : 0,
+          current_price: Number(pos.current_price),
+          invested: Number(pos.invested || 0),
+        };
+
+        if (pos.platform === "xtb") {
+          xtbInsts.push(entry);
+        } else if (pos.platform === "trii") {
+          triiInsts.push(entry);
+        }
       }
 
-      setXtbInstruments(
-        xtbConfigs.map((c) => {
-          const price = priceMap[c.asset] || planValueMap[c.asset] || 0;
-          return configToInstrument(c, price);
-        })
-      );
-      setTriiInstruments(
-        triiConfigs.map((c) => {
-          const price = priceMap[c.asset] || fundValueMap[c.asset] || 0;
-          return configToInstrument(c, price);
-        })
-      );
-      setSavingsEntries(
-        savingsConfigs.map((c) => configToSaving(c, savingsMap[c.asset]))
-      );
+      setXtbInstruments(xtbInsts);
+      setTriiInstruments(triiInsts);
+
+      // Load savings DIRECTLY from snapshot
+      const savingsEnts: SavingsEntry[] = snapshot.savings.map((s) => ({
+        id: `snapshot_${s.name}`, // Temporary ID from snapshot
+        bank: s.bank || "",
+        product_type: s.account_type || "ahorro",
+        name: s.name,
+        balance_cop: Number(s.balance_cop),
+        rate_ea: Number(s.rate_ea || 0),
+        term: s.term,
+        maturity_date: s.maturity_date,
+      }));
+
+      setSavingsEntries(savingsEnts);
     },
     []
   );
@@ -289,9 +334,9 @@ function EntryForm() {
 
     setSaving(true);
     try {
-      // Persist any new instruments to portfolio_config
+      // Persist any new instruments to portfolio_config (including snapshot-loaded ones)
       for (const inst of [...xtbInstruments, ...triiInstruments]) {
-        if (inst.id.startsWith("new_")) {
+        if (inst.id.startsWith("new_") || inst.id.startsWith("snapshot_")) {
           const volumeBased = usesVolumeEntry(inst.instrument_type, inst.entry_mode);
           const category =
             inst.platform === "xtb"
@@ -329,10 +374,10 @@ function EntryForm() {
         }
       }
 
-      // Persist new savings entries
+      // Persist new savings entries (including snapshot-loaded ones)
       for (const entry of savingsEntries) {
-        if (entry.id.startsWith("new_")) {
-          await addInstrumentToConfig({
+        if (entry.id.startsWith("new_") || entry.id.startsWith("snapshot_")) {
+          const saved = await addInstrumentToConfig({
             category: "savings",
             asset: entry.name,
             ticker: null,
@@ -345,6 +390,11 @@ function EntryForm() {
             invested: null,
             bank: entry.bank,
           });
+
+          // Update the ID in local state
+          setSavingsEntries((prev) =>
+            prev.map((s) => (s.id === entry.id ? { ...s, id: saved.id } : s))
+          );
         }
       }
 
@@ -446,7 +496,29 @@ function EntryForm() {
             />
           </div>
           <div>
-            <Label className="text-zinc-400">TRM (COP/USD)</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-zinc-400">TRM (COP/USD)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fetchTrm(date)}
+                disabled={fetchingTrm}
+                className="h-6 px-2 text-xs text-emerald-400 hover:text-emerald-300"
+              >
+                {fetchingTrm ? (
+                  <>
+                    <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                    {t("loading")}
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-1 h-3 w-3" />
+                    Auto
+                  </>
+                )}
+              </Button>
+            </div>
             <Input
               type="number"
               step="0.01"
@@ -470,7 +542,7 @@ function EntryForm() {
         autoFetched={autoFetched}
         fetchingPrices={fetchingPrices}
         onFetchPrices={() =>
-          fetchPrices([...xtbInstruments, ...triiInstruments])
+          fetchPrices([...xtbInstruments, ...triiInstruments], date)
         }
       />
 
@@ -483,7 +555,7 @@ function EntryForm() {
         autoFetched={autoFetched}
         fetchingPrices={fetchingPrices}
         onFetchPrices={() =>
-          fetchPrices([...xtbInstruments, ...triiInstruments])
+          fetchPrices([...xtbInstruments, ...triiInstruments], date)
         }
       />
 

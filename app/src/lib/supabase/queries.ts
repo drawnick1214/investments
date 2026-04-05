@@ -8,6 +8,8 @@ import type {
   FullSnapshot,
   PortfolioConfig,
   EntryFormData,
+  CashFlow,
+  CashFlowFormData,
 } from "../types";
 import {
   calcPnl,
@@ -44,7 +46,39 @@ export async function addInstrumentToConfig(instrument: {
   invested: number | null;
   bank?: string | null;
 }): Promise<PortfolioConfig> {
-  // Get max sort_order
+  // Check if instrument already exists (same platform + asset)
+  const { data: existingInstrument } = await supabase
+    .from("portfolio_config")
+    .select("*")
+    .eq("platform", instrument.platform)
+    .eq("asset", instrument.asset)
+    .maybeSingle();
+
+  // If exists, update it and return
+  if (existingInstrument) {
+    const { data: updated, error: updateError } = await supabase
+      .from("portfolio_config")
+      .update({
+        ticker: instrument.ticker,
+        currency: instrument.currency,
+        asset_type: instrument.asset_type,
+        instrument_type: instrument.instrument_type,
+        entry_mode: instrument.entry_mode,
+        shares: instrument.shares,
+        avg_cost: instrument.avg_cost,
+        invested: instrument.invested,
+        bank: instrument.bank,
+        is_active: true,
+      })
+      .eq("id", existingInstrument.id)
+      .select()
+      .single();
+
+    if (updateError) throw new Error(`Update existing instrument: ${updateError.message}`);
+    return updated as PortfolioConfig;
+  }
+
+  // Get max sort_order for new instrument
   const { data: existing } = await supabase
     .from("portfolio_config")
     .select("sort_order")
@@ -63,7 +97,7 @@ export async function addInstrumentToConfig(instrument: {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw new Error(`Insert new instrument: ${error.message}`);
   return data as PortfolioConfig;
 }
 
